@@ -296,6 +296,38 @@
                 });
             }
 
+            // Form submit loading
+            const uploadForm = document.querySelector('form[action*="import/upload"]');
+            if (uploadForm) {
+                uploadForm.addEventListener('submit', function() {
+                    Swal.fire({
+                        title: 'Mengunggah & Memvalidasi...',
+                        text: 'Sistem sedang membaca dan memvalidasi berkas spreadsheet Anda. Mohon tunggu sebentar.',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        },
+                        customClass: {
+                            popup: 'rounded-2xl'
+                        }
+                    });
+                });
+            }
+
+            @if($errors->any())
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Validasi Berkas!',
+                    html: '<div class="text-left font-medium text-sm text-gray-700">{!! implode("<br>", $errors->all()) !!}</div>',
+                    confirmButtonColor: '#C41E3A',
+                    customClass: {
+                        popup: 'rounded-2xl',
+                        confirmButton: 'px-5 py-2.5 rounded-xl font-semibold text-sm'
+                    }
+                });
+            @endif
+
             @if(session('success'))
                 Swal.fire({
                     icon: 'success',

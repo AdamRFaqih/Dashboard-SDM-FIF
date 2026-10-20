@@ -487,11 +487,15 @@
                         },
                         body: formData
                     })
-                    .then(response => {
-                        if (!response.ok && response.status !== 422) {
+                    .then(async response => {
+                        const data = await response.json().catch(() => null);
+                        if (!response.ok) {
+                            if (data && (data.message || data.errors)) {
+                                return data;
+                            }
                             throw new Error('HTTP error! status: ' + response.status);
                         }
-                        return response.json();
+                        return data || { success: true };
                     })
                     .then(data => {
                         if (data.success) {

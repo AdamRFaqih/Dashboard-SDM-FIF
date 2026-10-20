@@ -45,6 +45,16 @@
                 </a>
             </li>
 
+            {{-- Informasi SDM --}}
+            <li>
+                <a href="{{ route('informasi-sdm') }}"
+                    class="flex items-center px-6 py-4 transition-all duration-200
+                    {{ request()->routeIs('informasi-sdm') ? 'bg-[#FBB03B] text-white font-semibold' : 'hover:bg-red-500 text-white' }}">
+                    <i class="fa-solid fa-circle-info w-5 mr-4"></i>
+                    Informasi SDM
+                </a>
+            </li>
+
         </ul>
 
     </div>

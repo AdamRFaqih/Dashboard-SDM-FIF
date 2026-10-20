@@ -247,6 +247,11 @@ Route::get('/guest-kompetisi', function () {
     ));
 })->name('guest-kompetisi');
 
+// Informasi SDM (Aturan Studi Lanjut, JAD, Lembur, dll)
+Route::get('/informasi-sdm', function () {
+    return view('informasi-sdm');
+})->name('informasi-sdm');
+
 Route::get('/dashboard-dosen', function () {
     $studiLanjut = \App\Models\Dosen::with('prodi')
         ->whereNotNull('status_studi_lanjut')
@@ -355,6 +360,10 @@ Route::get('/dashboard-dosen', function () {
     )->count(),
 ];
 
+    $dosenList = \App\Models\Dosen::with(['prodi', 'kelompokKeahlian', 'riwayatPendidikan'])
+        ->orderBy('nama_lengkap', 'asc')
+        ->get();
+
     return view('dashboard-dosen', compact(
         'studiLanjut',
         'nisbah',
@@ -370,9 +379,10 @@ Route::get('/dashboard-dosen', function () {
         'pendDosen',
         'jfaDosen',
         'statusDosen',
-        'statusProfilDosen'
+        'statusProfilDosen',
+        'dosenList'
     ));
-})->name('dashboard-dosen');
+})->middleware('auth')->name('dashboard-dosen');
 
 Route::get('/dashboard-tpa', [TenagaPendukungAkademikController::class, 'dashboard'])->name('dashboard-tpa');
 
@@ -692,6 +702,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/export-excel', [TenagaPendukungAkademikController::class, 'exportExcel'])->name('export-excel');
         Route::get('/export-pdf', [TenagaPendukungAkademikController::class, 'exportPdf'])->name('export-pdf');
         Route::get('/laporan', [TenagaPendukungAkademikController::class, 'laporan'])->name('laporan');
+        Route::post('/laporan/update-akreditasi', [TenagaPendukungAkademikController::class, 'updateLaporanAkreditasi'])->name('laporan.update-akreditasi')->middleware(['can:kelola-data-tpa.create', 'check.crud:tpa']);
 
 
         Route::get('/download-template', [TenagaPendukungAkademikController::class, 'downloadTemplate'])->name('download-template');

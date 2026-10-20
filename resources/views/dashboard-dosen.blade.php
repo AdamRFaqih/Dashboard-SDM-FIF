@@ -308,6 +308,168 @@
                     </tbody>
                 </table>
             </div>
+        <!-- Tabel Seluruh Dosen (Akses Khusus Login / Antar Prodi) -->
+        <div class="bg-white p-6 md:p-8 rounded-2xl border border-slate-100 shadow-sm mb-8" id="tabel-semua-dosen">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-6 mb-6">
+                <div>
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 mb-2">
+                        <i class="fa-solid fa-lock"></i> Akses Terproteksi (Login Internal)
+                    </div>
+                    <h3 class="font-extrabold text-slate-800 text-xl tracking-tight">
+                        Tabel Data Seluruh Dosen FIF
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-1">
+                        Informasi lengkap profil, kepegawaian, riwayat pendidikan (S1-S3), JFA, dan kontak untuk koordinasi lintas program studi.
+                    </p>
+                </div>
+
+                <!-- Live Search & Filter Bar -->
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+                    <div class="relative flex-1 sm:w-64">
+                        <input type="text" id="dosenSearchInput" placeholder="Cari nama, kode, NIP..."
+                               class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-[#C41E3A] transition-all">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-xs"></i>
+                    </div>
+                    <select id="prodiFilterSelect" 
+                            class="px-3 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-[#C41E3A] transition-all">
+                        <option value="">Semua Homebase</option>
+                        @foreach($dosenList->pluck('prodi.nama_prodi')->unique()->filter() as $namaProdi)
+                            <option value="{{ $namaProdi }}">{{ $namaProdi }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto rounded-xl border border-slate-100">
+                <table class="w-full text-xs text-left" id="dosenMasterTable">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-600 font-bold uppercase tracking-wider border-b border-slate-100 whitespace-nowrap">
+                            <th class="px-4 py-3.5 text-center">No</th>
+                            <th class="px-4 py-3.5">Nama Lengkap</th>
+                            <th class="px-4 py-3.5 text-center">Kode Dosen</th>
+                            <th class="px-4 py-3.5">NIP</th>
+                            <th class="px-4 py-3.5">NIDN / NUPTK</th>
+                            <th class="px-4 py-3.5">No. Serdos</th>
+                            <th class="px-4 py-3.5">Homebase</th>
+                            <th class="px-4 py-3.5">KK</th>
+                            <th class="px-4 py-3.5">Status Pegawai</th>
+                            <th class="px-4 py-3.5 min-w-[220px]">Riwayat Pendidikan (S1 - S3 + Kampus)</th>
+                            <th class="px-4 py-3.5">JFA & TMT JFA</th>
+                            <th class="px-4 py-3.5">Jabatan Struktural</th>
+                            <th class="px-4 py-3.5">Email</th>
+                            <th class="px-4 py-3.5 text-center">Kontak WA</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 font-medium">
+                        @forelse($dosenList as $idx => $d)
+                        <tr class="hover:bg-slate-50/70 transition-colors dosen-row" 
+                            data-nama="{{ strtolower(($d->front_title ? $d->front_title . ' ' : '') . $d->nama_lengkap . ($d->back_title ? ', ' . $d->back_title : '')) }}"
+                            data-kode="{{ strtolower($d->kode_dosen) }}"
+                            data-nip="{{ $d->nip }}"
+                            data-prodi="{{ $d->prodi->nama_prodi ?? '' }}">
+                            <td class="px-4 py-3 text-center text-slate-400">{{ $idx + 1 }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                <div class="font-bold text-slate-800">
+                                    {{ $d->front_title ? $d->front_title . ' ' : '' }}{{ $d->nama_lengkap }}{{ $d->back_title ? ', ' . $d->back_title : '' }}
+                                </div>
+                                <div class="text-[10px] text-slate-400">
+                                    Status: <span class="font-semibold text-emerald-600">{{ $d->status_dosen ?? 'Aktif' }}</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-center whitespace-nowrap">
+                                <span class="px-2.5 py-1 rounded-md bg-red-50 text-[#C41E3A] font-bold font-mono">
+                                    {{ $d->kode_dosen }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap font-mono text-slate-600">{{ $d->nip }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap font-mono text-slate-600">{{ $d->nidn ?? '-' }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                @if($d->no_serdos)
+                                    <span class="text-slate-700 font-mono">{{ $d->no_serdos }}</span>
+                                @elseif($d->sertifikasi_dosen)
+                                    <span class="inline-flex items-center gap-1 text-emerald-600 font-semibold"><i class="fa-solid fa-check"></i> Serdos</span>
+                                @else
+                                    <span class="text-slate-400">-</span>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-slate-700 font-semibold">
+                                {{ $d->prodi->nama_prodi ?? '-' }}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-slate-600">
+                                {{ $d->kelompokKeahlian->nama_kelompok_keahlian ?? '-' }}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                <span class="px-2 py-0.5 rounded text-[11px] font-semibold 
+                                    {{ str_contains($d->status_pegawai, 'Tetap') ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700' }}">
+                                    {{ $d->status_pegawai }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-[11px] text-slate-600">
+                                @if($d->riwayatPendidikan && $d->riwayatPendidikan->count() > 0)
+                                    <div class="flex flex-col gap-1">
+                                        @foreach($d->riwayatPendidikan as $r)
+                                            <div>
+                                                <strong class="text-slate-800">{{ $r->jenjang }}:</strong> 
+                                                <span>{{ $r->prodi_pendidikan }}</span>
+                                                <span class="text-slate-400">({{ $r->nama_universitas }})</span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <span class="text-slate-700 font-bold">{{ $d->pendidikan_terakhir }}</span>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                <div class="font-bold text-slate-800">{{ $d->jabatan ?? 'NJFA' }}</div>
+                                @if($d->tmt)
+                                    <div class="text-[10px] text-slate-400">TMT: {{ \Carbon\Carbon::parse($d->tmt)->format('d/m/Y') }}</div>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                @if($d->jabatan_struktural)
+                                    <span class="px-2 py-0.5 rounded bg-purple-50 text-purple-700 font-semibold text-[11px]">
+                                        {{ $d->jabatan_struktural }}
+                                    </span>
+                                @else
+                                    <span class="text-slate-400">-</span>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-slate-600">
+                                @if($d->email)
+                                    <a href="mailto:{{ $d->email }}" class="hover:text-[#C41E3A] flex items-center gap-1">
+                                        <i class="fa-regular fa-envelope text-[10px]"></i>
+                                        <span>{{ $d->email }}</span>
+                                    </a>
+                                @else
+                                    <span class="text-slate-400">-</span>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3 text-center whitespace-nowrap">
+                                @if($d->kontak_wa)
+                                    <a href="https://wa.me/{{ preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $d->kontak_wa)) }}" 
+                                       target="_blank" 
+                                       class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-colors font-semibold text-[11px]">
+                                        <i class="fa-brands fa-whatsapp text-xs"></i>
+                                        <span>{{ $d->kontak_wa }}</span>
+                                    </a>
+                                @else
+                                    <span class="text-slate-400">-</span>
+                                @endif
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="14" class="px-4 py-12 text-center text-slate-400">Belum ada data dosen tersimpan.</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="noDosenMatchNotice" class="hidden text-center py-8 text-slate-400 text-xs">
+                <i class="fa-solid fa-magnifying-glass text-xl mb-2 text-slate-300"></i>
+                <p>Tidak ditemukan data dosen yang sesuai dengan kriteria pencarian.</p>
+            </div>
         </div>
 
     </main>
@@ -333,6 +495,42 @@
                 };
                 dateSpan.textContent = new Date().toLocaleDateString('id-ID', options);
             }
+
+            // Real-time search & prodi filter for Dosen Table
+            const searchInput = document.getElementById('dosenSearchInput');
+            const prodiFilter = document.getElementById('prodiFilterSelect');
+            const rows = document.querySelectorAll('.dosen-row');
+            const noMatchNotice = document.getElementById('noDosenMatchNotice');
+
+            function filterDosenTable() {
+                const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+                const prodiVal = prodiFilter ? prodiFilter.value.trim() : '';
+                let visibleCount = 0;
+
+                rows.forEach(row => {
+                    const nama = row.getAttribute('data-nama') || '';
+                    const kode = row.getAttribute('data-kode') || '';
+                    const nip = row.getAttribute('data-nip') || '';
+                    const prodi = row.getAttribute('data-prodi') || '';
+
+                    const matchesQuery = !query || nama.includes(query) || kode.includes(query) || nip.includes(query);
+                    const matchesProdi = !prodiVal || prodi === prodiVal;
+
+                    if (matchesQuery && matchesProdi) {
+                        row.style.display = '';
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+
+                if (noMatchNotice) {
+                    noMatchNotice.style.display = visibleCount === 0 ? 'block' : 'none';
+                }
+            }
+
+            if (searchInput) searchInput.addEventListener('input', filterDosenTable);
+            if (prodiFilter) prodiFilter.addEventListener('change', filterDosenTable);
         });
     </script>
     @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/dosenChart.js'])
