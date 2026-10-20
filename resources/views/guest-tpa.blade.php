@@ -75,6 +75,28 @@
                 <div class="mt-4 flex items-center text-xs text-blue-600 font-semibold gap-1">
                     <span class="bg-blue-50 px-2.5 py-0.5 rounded-full">LAA, SDM & Program Studi</span>
                 </div>
+        <!-- Laporan Jumlah TPA Pegawai Tetap dan Profesional (Item 3) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-6 rounded-2xl shadow-sm hover:shadow-md transition-all flex items-center justify-between">
+                <div>
+                    <span class="text-xs font-bold uppercase tracking-wider text-blue-200">Status Kepegawaian</span>
+                    <h3 class="text-lg font-bold mt-1">TPA Pegawai Tetap</h3>
+                    <p class="text-3xl font-black mt-2">{{ $totalTetap ?? 0 }} <span class="text-base font-normal text-blue-200">Staf ({{ $persenTetap ?? 0 }}%)</span></p>
+                </div>
+                <div class="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-2xl">
+                    <i class="fa-solid fa-id-badge"></i>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-r from-amber-500 to-orange-600 text-white p-6 rounded-2xl shadow-sm hover:shadow-md transition-all flex items-center justify-between">
+                <div>
+                    <span class="text-xs font-bold uppercase tracking-wider text-amber-200">Status Kepegawaian</span>
+                    <h3 class="text-lg font-bold mt-1">TPA Pegawai Profesional / Kontrak</h3>
+                    <p class="text-3xl font-black mt-2">{{ $totalProfesional ?? 0 }} <span class="text-base font-normal text-amber-200">Staf ({{ $persenProfesional ?? 0 }}%)</span></p>
+                </div>
+                <div class="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-2xl">
+                    <i class="fa-solid fa-user-clock"></i>
+                </div>
             </div>
         </div>
 

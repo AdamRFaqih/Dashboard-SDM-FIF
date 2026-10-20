@@ -34,6 +34,11 @@ class Dosen extends Model
         'batas_studi',         // ✅ Tambahan baru
         'tmt',
         'tanggal_mulai_status',
+        'nidn',
+        'no_serdos',
+        'jabatan_struktural',
+        'email',
+        'kontak_wa',
     ];
 
     protected $casts = [

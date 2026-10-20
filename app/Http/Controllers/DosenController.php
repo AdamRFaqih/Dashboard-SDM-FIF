@@ -1002,7 +1002,12 @@ class DosenController extends Controller
         $this->authorize('import-data-dosen.view');
         
         $request->validate([
-            'file' => 'required|mimes:xlsx,xls,csv|max:2048'
+            'file' => ['required', 'file', 'max:10240', function ($attribute, $value, $fail) {
+                $ext = strtolower($value->getClientOriginalExtension());
+                if (!in_array($ext, ['xlsx', 'xls', 'csv', 'xml'])) {
+                    $fail('Berkas harus berupa file spreadsheet (.xlsx, .xls, atau .csv).');
+                }
+            }]
         ]);
 
         try {

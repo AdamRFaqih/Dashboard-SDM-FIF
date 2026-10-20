@@ -331,13 +331,6 @@ class TenagaPendukungAkademikController extends Controller
         ]);
     }
 
-    public function laporan()
-    {
-        $statistik = $this->getDashboardData();
-
-        return view('manajemen-tpa.laporan', compact('statistik'));
-    }
-
     /**
      * Show the form for creating a new TPA.
      */
@@ -629,6 +622,15 @@ class TenagaPendukungAkademikController extends Controller
             $jabatanCounts[trim($row->jabatan)] = $row->total;
         }
 
+        // 5. Status Pegawai Tetap vs Profesional / Kontrak
+        $totalTetap = TenagaPendukungAkademik::where('status_pegawai', 'like', '%Tetap%')->count();
+        $totalProfesional = TenagaPendukungAkademik::where(function($q) {
+            $q->where('status_pegawai', 'like', '%Profesional%')
+              ->orWhere('status_pegawai', 'like', '%Kontrak%');
+        })->count();
+        $persenTetap = $totalTPA > 0 ? round(($totalTetap / $totalTPA) * 100, 1) : 0;
+        $persenProfesional = $totalTPA > 0 ? round(($totalProfesional / $totalTPA) * 100, 1) : 0;
+
         return [
             'totalTPA' => $totalTPA,
             'pendidikanCountsMap' => $pendidikanCountsMap,
@@ -637,7 +639,122 @@ class TenagaPendukungAkademikController extends Controller
             'lokasiCounts' => $lokasiCounts,
             'statusCounts' => $statusCounts,
             'jabatanCounts' => $jabatanCounts,
+            'totalTetap' => $totalTetap,
+            'totalProfesional' => $totalProfesional,
+            'persenTetap' => $persenTetap,
+            'persenProfesional' => $persenProfesional,
         ];
+    }
+
+    /**
+     * Halaman Laporan TPA (Pelatihan & Sertifikasi Akreditasi, Status Pegawai Tetap & Profesional)
+     */
+    public function laporan(Request $request)
+    {
+        $this->authorize('kelola-data-tpa.view');
+        $statistik = $this->getDashboardData();
+
+        // 1. Data Akreditasi - Tabel 1: Persentase TPA Bersertifikat Kompetensi/Profesi
+        $tpaBersertifikat = (int) (DB::table('laporan_akreditasi_tpa')->where('key', 'jumlah_tpa_bersertifikat')->value('value') ?? 21);
+        $totalTpaAkreditasi = (int) (DB::table('laporan_akreditasi_tpa')->where('key', 'jumlah_total_tpa')->value('value') ?? ($statistik['totalTPA'] > 0 ? $statistik['totalTPA'] : 21));
+        $persenSertifikat = $totalTpaAkreditasi > 0 ? round(($tpaBersertifikat / $totalTpaAkreditasi) * 100, 2) : 0;
+
+        // 2. Data Akreditasi - Tabel 2: Rincian Kegiatan Pengembangan Tenaga Kependidikan
+        $tahunList = DB::table('kegiatan_pengembangan_tpa')
+            ->distinct()
+            ->orderBy('tahun', 'asc')
+            ->pluck('tahun')
+            ->toArray();
+
+        if (empty($tahunList)) {
+            $tahunList = [2020, 2021, 2022, 2023, 2024];
+        }
+
+        $daftarKegiatan = ['Pelatihan', 'Sertifikasi', 'Studi Lanjut'];
+        $matrixKegiatan = [];
+        $totalPerTahun = array_fill_keys($tahunList, 0);
+        $grandTotalKegiatan = 0;
+
+        foreach ($daftarKegiatan as $keg) {
+            $row = [
+                'nama' => $keg,
+                'per_tahun' => [],
+                'total' => 0
+            ];
+            foreach ($tahunList as $th) {
+                $jml = (int) (DB::table('kegiatan_pengembangan_tpa')
+                    ->where('kegiatan', $keg)
+                    ->where('tahun', $th)
+                    ->value('jumlah') ?? 0);
+                $row['per_tahun'][$th] = $jml;
+                $row['total'] += $jml;
+                $totalPerTahun[$th] += $jml;
+                $grandTotalKegiatan += $jml;
+            }
+            $matrixKegiatan[$keg] = $row;
+        }
+
+        // 3. Rincian Pegawai Tetap & Profesional per Unit Penempatan
+        $rincianStatusUnit = TenagaPendukungAkademik::select(
+            'lokasi_kerja',
+            DB::raw("SUM(CASE WHEN status_pegawai LIKE '%Tetap%' THEN 1 ELSE 0 END) as total_tetap"),
+            DB::raw("SUM(CASE WHEN status_pegawai LIKE '%Profesional%' OR status_pegawai LIKE '%Kontrak%' THEN 1 ELSE 0 END) as total_profesional"),
+            DB::raw("count(*) as total_unit")
+        )
+        ->groupBy('lokasi_kerja')
+        ->orderBy('lokasi_kerja', 'asc')
+        ->get();
+
+        return view('manajemen-tpa.laporan', compact(
+            'statistik',
+            'tpaBersertifikat',
+            'totalTpaAkreditasi',
+            'persenSertifikat',
+            'tahunList',
+            'matrixKegiatan',
+            'totalPerTahun',
+            'grandTotalKegiatan',
+            'rincianStatusUnit'
+        ));
+    }
+
+    /**
+     * Update Data Akreditasi TPA (Khusus Admin)
+     */
+    public function updateLaporanAkreditasi(Request $request)
+    {
+        $this->authorize('kelola-data-tpa.create');
+
+        $validated = $request->validate([
+            'jumlah_tpa_bersertifikat' => 'required|integer|min:0',
+            'jumlah_total_tpa' => 'required|integer|min:1',
+            'kegiatan' => 'nullable|array',
+        ]);
+
+        // Simpan data sertifikasi
+        DB::table('laporan_akreditasi_tpa')->updateOrInsert(
+            ['key' => 'jumlah_tpa_bersertifikat'],
+            ['value' => $validated['jumlah_tpa_bersertifikat'], 'updated_at' => now()]
+        );
+        DB::table('laporan_akreditasi_tpa')->updateOrInsert(
+            ['key' => 'jumlah_total_tpa'],
+            ['value' => $validated['jumlah_total_tpa'], 'updated_at' => now()]
+        );
+
+        // Simpan rincian kegiatan per tahun
+        if (!empty($validated['kegiatan'])) {
+            foreach ($validated['kegiatan'] as $keg => $tahuns) {
+                foreach ($tahuns as $th => $jml) {
+                    DB::table('kegiatan_pengembangan_tpa')->updateOrInsert(
+                        ['kegiatan' => $keg, 'tahun' => (int) $th],
+                        ['jumlah' => (int) $jml, 'updated_at' => now()]
+                    );
+                }
+            }
+        }
+
+        return redirect()->route('manajemen-tpa.laporan')
+            ->with('success', 'Data laporan akreditasi TPA berhasil diperbarui!');
     }
 
     /**

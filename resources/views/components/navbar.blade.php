@@ -88,6 +88,13 @@
                             </li>
                         @endcan
 
+                        {{-- Informasi SDM --}}
+                        <li>
+                            <a href="{{ route('informasi-sdm') }}"
+                                class="block px-12 py-3 text-sm font-medium hover:bg-red-600 transition-colors duration-200 {{ request()->routeIs('informasi-sdm') ? 'bg-red-600 text-white border-r-4 border-yellow-400' : 'text-red-100' }}">
+                                Informasi SDM
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </li>
@@ -577,7 +584,7 @@
 
         // Define route mappings for each section
         const routeMappings = {
-            'dashboardDropdown': ['dashboard', 'data-dosen', 'data-tpa', 'dashboard-dosen', 'dashboard-tpa', 'dashboard-kompetisi', 'kompetisi'],
+            'dashboardDropdown': ['dashboard', 'data-dosen', 'data-tpa', 'dashboard-dosen', 'dashboard-tpa', 'dashboard-kompetisi', 'kompetisi', 'informasi-sdm'],
             'dosenDropdown': ['manajemen-dosen', 'kelola-data'],
             'tpaDropdown': ['manajemen-tpa'],
             'rekrutasiDropdown': ['rekrutasi-dosen'],
