@@ -18,16 +18,26 @@ fi
 
 # 2. Build and start containers
 echo "[+] Building and starting Docker containers..."
-docker compose -f docker-compose.prod.yml up -d --build
+if ! docker compose -f docker-compose.prod.yml up -d --build; then
+    echo "[-] Docker compose failed to start. Inspecting mysql logs:"
+    docker compose -f docker-compose.prod.yml logs mysql
+    exit 1
+fi
 
 # 3. Wait for MySQL to be ready
 echo "[+] Waiting for MySQL to become healthy..."
 RETRIES=30
-until docker compose -f docker-compose.prod.yml exec mysql mysqladmin ping -h localhost -u root -p$(grep DB_PASSWORD .env | cut -d '=' -f2) --silent 2>/dev/null || [ $RETRIES -eq 0 ]; do
+until docker compose -f docker-compose.prod.yml exec -T mysql mysqladmin ping -h localhost --silent 2>/dev/null || [ $RETRIES -eq 0 ]; do
     echo "    Waiting for MySQL... ($RETRIES attempts left)"
     RETRIES=$((RETRIES-1))
     sleep 2
 done
+
+if [ $RETRIES -eq 0 ]; then
+    echo "[-] MySQL did not become healthy in time. Showing MySQL logs:"
+    docker compose -f docker-compose.prod.yml logs mysql
+    exit 1
+fi
 
 # 4. Generate app key if not set
 if ! grep -q "^APP_KEY=base64:" .env; then
