@@ -16,6 +16,18 @@ if [ ! -f .env ]; then
     echo "[!] Please verify credentials in .env if needed."
 fi
 
+# Ensure APP_KEY exists before starting containers
+if ! grep -q "^APP_KEY=base64:" .env 2>/dev/null; then
+    echo "[+] Generating Laravel APP_KEY..."
+    APP_KEY="base64:$(openssl rand -base64 32)"
+    if grep -q "^APP_KEY=" .env; then
+        sed -i.bak "s|^APP_KEY=.*|APP_KEY=${APP_KEY}|" .env && rm -f .env.bak
+    else
+        echo "APP_KEY=${APP_KEY}" >> .env
+    fi
+    echo "[+] APP_KEY written to .env"
+fi
+
 # Ensure DB_PASSWORD is not empty (MySQL requires a non-empty password)
 if grep -q "^DB_PASSWORD=$" .env 2>/dev/null || grep -q '^DB_PASSWORD=""$' .env 2>/dev/null || grep -q "^DB_PASSWORD=''$" .env 2>/dev/null; then
     RANDOM_PASS=$(head -c 16 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 16)
@@ -48,24 +60,18 @@ fi
 
 echo "[+] MySQL is ready and responding!"
 
-# 4. Generate app key if not set
-if ! grep -q "^APP_KEY=base64:" .env; then
-    echo "[+] Generating Laravel APP_KEY..."
-    docker compose -f docker-compose.prod.yml exec -T app php artisan key:generate --force
-fi
-
-# 5. Database migrations
+# 4. Database migrations
 echo "[+] Running database migrations..."
 docker compose -f docker-compose.prod.yml exec -T app php artisan migrate --force
 
-# 6. Optimize Laravel performance (caching)
+# 5. Optimize Laravel performance (caching)
 echo "[+] Optimizing Laravel caches..."
 docker compose -f docker-compose.prod.yml exec -T app php artisan config:cache
 docker compose -f docker-compose.prod.yml exec -T app php artisan route:cache
 docker compose -f docker-compose.prod.yml exec -T app php artisan view:cache
 docker compose -f docker-compose.prod.yml exec -T app php artisan storage:link || true
 
-# 7. Cloudflare Tunnel Network Hookup
+# 6. Cloudflare Tunnel Network Hookup
 echo "[+] Checking for running cloudflare_tunnel container..."
 if docker ps --format '{{.Names}}' | grep -q "^cloudflare_tunnel$"; then
     echo "[+] Connecting 'cloudflare_tunnel' to 'dashboard-sdm-network'..."
