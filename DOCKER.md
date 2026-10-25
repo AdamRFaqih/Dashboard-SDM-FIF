@@ -252,6 +252,50 @@ For production deployment:
 
 5. Configure log rotation for storage/logs
 
+## Production Deployment & Cloudflare Tunnel
+
+### 1. Port Allocation on Server
+To avoid conflicting with existing services on the host:
+- `80`, `443`, `8080`: Used by Coolify Proxy (Traefik)
+- `8081`, `8082`: Used by existing frontends
+- **`8083`**: Allocated for Dashboard SDM FIF (`APP_PORT=8083`)
+- `3307`: MySQL localhost binding
+- `6380`: Redis localhost binding
+
+### 2. Fast Deploy Script
+Run the automated deployment script directly on the server:
+```bash
+./deploy.sh
+```
+This script will:
+1. Initialize `.env` from `.env.docker` if not present.
+2. Build and launch containers with `docker-compose.prod.yml`.
+3. Wait for MySQL to become healthy.
+4. Run migrations (`php artisan migrate --force`).
+5. Optimize caches (`config:cache`, `route:cache`, `view:cache`).
+6. Automatically connect `cloudflare_tunnel` to `dashboard-sdm-network`.
+
+### 3. Routing via Cloudflare Tunnel (`cloudflare_tunnel`)
+Since `cloudflare_tunnel` is already running on the server:
+
+#### Option A: Docker Network (Recommended - No Port Exposure Needed)
+Connect the existing Cloudflare Tunnel container to the application network:
+```bash
+docker network connect dashboard-sdm-network cloudflare_tunnel
+```
+Then in **Cloudflare Zero Trust Dashboard** (`Networks` > `Tunnels` > Your Tunnel > `Configure` > `Public Hostnames`):
+- **Subdomain**: `sdm` (or desired name)
+- **Domain**: `yourdomain.com`
+- **Service**: `HTTP`
+- **URL**: `dashboard-sdm-nginx:80`
+
+#### Option B: Host Port Routing
+In **Cloudflare Zero Trust Dashboard**:
+- **Service**: `HTTP`
+- **URL**: `172.17.0.1:8083` (or `localhost:8083`)
+
+---
+
 ## Performance Optimization
 
 ### Enable OPcache

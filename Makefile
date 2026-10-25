@@ -27,6 +27,12 @@ help:
 	@echo "  make test         Run tests"
 	@echo "  make pint         Run Laravel Pint"
 	@echo ""
+	@echo "Production & Server:"
+	@echo "  make prod-deploy  Full production deploy & optimize"
+	@echo "  make prod-up      Start production containers"
+	@echo "  make prod-down    Stop production containers"
+	@echo "  make prod-logs    View production logs"
+	@echo ""
 	@echo "Maintenance:"
 	@echo "  make cache-clear  Clear all caches"
 	@echo "  make optimize     Optimize application"
@@ -111,3 +117,20 @@ setup:
 	docker-compose exec app php artisan migrate
 	docker-compose exec app php artisan storage:link
 	docker-compose exec app php artisan config:cache
+
+# Production deployment
+prod-build:
+	docker compose -f docker-compose.prod.yml build
+
+prod-up:
+	docker compose -f docker-compose.prod.yml up -d
+
+prod-down:
+	docker compose -f docker-compose.prod.yml down
+
+prod-logs:
+	docker compose -f docker-compose.prod.yml logs -f
+
+prod-deploy:
+	./deploy.sh
+

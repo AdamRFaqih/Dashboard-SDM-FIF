@@ -47,6 +47,9 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www/html
 
+# Production stage for PHP-FPM
+FROM base AS production
+
 # Copy composer files
 COPY composer.json composer.lock ./
 
@@ -62,18 +65,32 @@ COPY --from=node-builder /app/public/build ./public/build
 # Generate optimized autoloader
 RUN composer dump-autoload --optimize
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html/storage \
-    && chmod -R 755 /var/www/html/bootstrap/cache
-
-# Production stage
-FROM base AS production
-
-# Copy PHP-FPM configuration
+# PHP configuration
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/custom.ini
 COPY docker/php/www.conf /usr/local/etc/php-fpm.d/www.conf
 
+# Setup entrypoint script
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Set initial permissions
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 775 /var/www/html/storage \
+    && chmod -R 775 /var/www/html/bootstrap/cache
+
 EXPOSE 9000
 
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["php-fpm"]
+
+# Production stage for Nginx web server
+FROM nginx:alpine AS nginx
+
+COPY docker/nginx/nginx.conf /etc/nginx/conf.d/default.conf
+
+WORKDIR /var/www/html
+COPY public ./public
+COPY --from=node-builder /app/public/build ./public/build
+
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
